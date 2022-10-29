@@ -5,7 +5,7 @@ const qqmusic = require("qq-music-api");
 const SongDir = "/home/walter/Music/mpd/";
 const SongLyricDir = "/home/walter/Music/mpd/.lyrics/";
 
-qqmusic.setCookie(fs.readFileSync("qqmusic-cookie").toString().trim());
+qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
 function DownloadSong(song) {
   qqmusic
