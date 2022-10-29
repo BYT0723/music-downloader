@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "download": "^8.0.0",
+    "qq-music-api": "^1.1.2"
+  }
+}
