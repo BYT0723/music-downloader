@@ -111,7 +111,7 @@ switch (opt) {
     Search(arg);
     break;
   case "download":
-    console.log();
+    if (arg == undefined || arg == "") arg = qqmusic.uin;
     DownloadUserSongList(arg);
     break;
   default:
