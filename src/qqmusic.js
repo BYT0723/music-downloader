@@ -12,26 +12,27 @@ qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 // Download song
 function DownloadSong(song) {
   qqmusic
-      .api("/song/url", {
-        id: song.mid,
-        type: song.size,
-        mediaId: song.strMediaMid,
-      })
-      .then((res) => {
-        if (fs.existsSync(song.listpath + song.filename)) return;
-        download(res, song.listpath, { filename: song.filename })
-            .then(() => console.log(song.filename, "Download Completed !"))
-            .catch((err) => TryDownloadNextSizeSong(song, err));
-      })
-      .catch((err) => TryDownloadNextSizeSong(song, err));
+    .api("/song/url", {
+      id: song.mid,
+      type: song.size,
+      mediaId: song.strMediaMid,
+    })
+    .then((res) => {
+      if (fs.existsSync(song.listpath + song.filename)) return;
+      download(res, song.listpath, { filename: song.filename })
+        .then(() => console.log(song.filename, "Download Completed !"))
+        .catch((err) => TryDownloadNextSizeSong(song, err));
+    })
+    .catch((err) => TryDownloadNextSizeSong(song, err));
 }
 
 function TryDownloadNextSizeSong(song, err) {
   let current = SongSize.indexOf(song.size);
   if (current < SongSize.length - 1) {
     let nextSize = SongSize[current + 1];
+    let nextFilename = ["320", "128"].indexOf(nextSize) !== -1 ? "mp3" : song.filename.replace(song.size, nextSize);
     let newSong = Object.assign(song,{
-      filename: song.filename.replace(song.size, nextSize),
+      filename: nextFilename,
       size: nextSize
     });
     DownloadSong(newSong);
