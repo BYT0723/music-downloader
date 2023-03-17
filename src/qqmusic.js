@@ -5,6 +5,7 @@ const qqmusic = require("qq-music-api");
 const SongDir = "/home/walter/Music/";
 const RecommendDailyDir = "每日推荐";
 const SongLyricDir = "/home/walter/Music/.lyrics/";
+const SongSize = ["ape", "flac", "m4a", "320", "128"];
 
 qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
@@ -13,15 +14,31 @@ function DownloadSong(song) {
   qqmusic
     .api("/song/url", {
       id: song.mid,
+      type: song.size,
       mediaId: song.strMediaMid,
     })
     .then((res) => {
       if (fs.existsSync(song.listpath + song.filename)) return;
-      download(res, song.listpath, { filename: song.filename }).end(() =>
-        console.log(song.filename, "Download Completed !")
-      );
+      download(res, song.listpath, { filename: song.filename })
+        .then(() => console.log(song.filename, "Download Completed !"))
+        .catch((err) => TryDownloadNextSizeSong(song, err));
     })
-    .catch((err) => console.log(song.filename, ":", err));
+    .catch((err) => TryDownloadNextSizeSong(song, err));
+}
+
+function TryDownloadNextSizeSong(song, err) {
+  let current = SongSize.indexOf(song.size);
+  if (current < SongSize.length - 1) {
+    let nextSize = SongSize[current + 1];
+    let nextFilename = ["320", "128"].indexOf(nextSize) !== -1 ? "mp3" : song.filename.replace(song.size, nextSize);
+    let newSong = Object.assign(song,{
+      filename: nextFilename,
+      size: nextSize
+    });
+    DownloadSong(newSong);
+  } else {
+    console.log(song.filename, ":", err);
+  }
 }
 
 // Download lyrics and tranlation of lyrics
@@ -69,15 +86,17 @@ async function DownloadUserSongList(id) {
       let singers = [];
       for (s of song.singer) singers.push(s.name);
 
+      let songsize = SongSize[0];
       let songname = song.songname.replace("/", " ");
       let singer = singers.join();
       let payload = {
         mid: song.songmid,
         strMediaMid: song.strMediaMid,
         name: songname,
+        size: songsize,
         singer: singer,
         listpath: listpath,
-        filename: songname + " - " + singer + ".mp3",
+        filename: songname + " - " + singer + "." + songsize,
         lyricname: songname + " - " + singer + ".lrc",
         translyricname: songname + " - " + singer + ".trans.lrc",
       };
@@ -133,6 +152,7 @@ async function RecommendDaily() {
     let singers = [];
     for (s of song.singer) singers.push(s.name);
 
+    let songsize = SongSize[0];
     let songname = song.songname.replace("/", " ");
     let singer = singers.join();
     let payload = {
@@ -140,8 +160,9 @@ async function RecommendDaily() {
       strMediaMid: song.strMediaMid,
       name: songname,
       singer: singer,
+      size: songsize,
       listpath: listpath,
-      filename: songname + " - " + singer + ".mp3",
+      filename: songname + " - " + singer + "." + songsize,
       lyricname: songname + " - " + singer + ".lrc",
       translyricname: songname + " - " + singer + ".trans.lrc",
     };
