@@ -5,7 +5,8 @@ const qqmusic = require("qq-music-api");
 const SongDir = "/home/walter/Music/";
 const RecommendDailyDir = "每日推荐";
 const SongLyricDir = "/home/walter/Music/.lyrics/";
-const SongSize = ["ape", "flac", "320", "128", "m4a"];
+// const SongSize = ["flac", "320", "128", "ape", "m4a"];
+const SongSize = ["128", "320", "flac"];
 const sizeToSuffix = (size) =>
   ["320", "128"].indexOf(size) >= 0 ? "mp3" : size;
 
@@ -23,7 +24,8 @@ function DownloadSong(song) {
       if (fs.existsSync(song.listpath + song.filename)) return;
       download(res, song.listpath, { filename: song.filename })
         .then(() => console.log(song.filename, "Download Completed !"))
-        .catch((err) => TryDownloadNextSizeSong(song, err));
+        // .catch((err) => TryDownloadNextSizeSong(song, err));
+        .catch((err) => console.log(song.filename, err));
     })
     .catch((err) => TryDownloadNextSizeSong(song, err));
 }
@@ -40,24 +42,27 @@ function TryDownloadNextSizeSong(song, err) {
   }
 }
 
-// Download lyrics and tranlation of lyrics
+// Download lyrics and translation of lyrics
 function DownloadSongLyrics(song) {
   qqmusic
     .api("lyric", {
       songmid: song.mid,
     })
     .then((res) => {
-      if (fs.existsSync(SongLyricDir + song.lyricname)) return;
-      if (fs.existsSync(SongLyricDir + song.translyricname)) return;
-
       let callback = (err) => {
         if (err != null) console.log(song.lyricname, ":", err);
       };
-      res.lyric = res.lyric.replace("&apos;", "'");
-      fs.writeFile(SongLyricDir + song.lyricname, res.lyric, callback);
-      if (res.trans != "") {
-        res.trans = res.trans.replace("&apos;", "'");
-        fs.writeFile(SongLyricDir + song.translyricname, res.trans, callback);
+      // download lyrics
+      if (!fs.existsSync(SongLyricDir + song.lyricname)) {
+        res.lyric = res.lyric.replace("&apos;", "'");
+        fs.writeFile(SongLyricDir + song.lyricname, res.lyric, callback);
+      }
+      // download lyrics translation
+      if (!fs.existsSync(SongLyricDir + song.translyricname)) {
+        if (res.trans != "") {
+          res.trans = res.trans.replace("&apos;", "'");
+          fs.writeFile(SongLyricDir + song.translyricname, res.trans, callback);
+        }
       }
     })
     .catch((err) => console.log(err));
@@ -154,9 +159,7 @@ async function RecommendDaily() {
   DownloadSongList(res.songlist, listpath);
 
   let now = new Date();
-  fs.writeFile(listpath + ".date", now.toString(), (err) => {
-    console.log(err);
-  });
+  fs.writeFile(listpath + ".date", now.toString(), (err) => console.log(err));
 }
 
 let opt = process.argv.slice(2)[0]; //获取控制台参数
