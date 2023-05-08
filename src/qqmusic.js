@@ -151,7 +151,7 @@ async function RecommendDaily() {
         fs.mkdirSync(listpath);
       }
     } else {
-      fs.rmSync(listpath, (err) => console.log(err));
+      fs.rmSync(listpath, {recursive: true, force: true});
       fs.mkdirSync(listpath);
     }
   }
