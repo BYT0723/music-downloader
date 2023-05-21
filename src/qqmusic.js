@@ -9,6 +9,8 @@ const SongLyricDir = "/home/walter/Music/.lyrics/";
 const SongSize = ["128", "320", "flac"];
 const sizeToSuffix = (size) =>
   ["320", "128"].indexOf(size) >= 0 ? "mp3" : size;
+const createMpdPlayList = true;
+const MpdPlayListsPath = "/home/walter/.mpd/playlists/";
 
 qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
@@ -68,7 +70,10 @@ function DownloadSongLyrics(song) {
     .catch((err) => console.log(err));
 }
 
-function DownloadSongList(songlist, targetDir) {
+function DownloadSongList(listname, songlist) {
+  let listpath = SongDir + listname + "/";
+  if (!fs.existsSync(listpath)) fs.mkdirSync(listpath);
+
   for (let song of songlist) {
     let singers = [];
     for (s of song.singer) singers.push(s.name);
@@ -82,11 +87,24 @@ function DownloadSongList(songlist, targetDir) {
       name: songname,
       singer: singer,
       size: songsize,
-      listpath: targetDir,
+      listpath: listpath,
       filename: songname + " - " + singer + "." + sizeToSuffix(songsize),
       lyricname: songname + " - " + singer + ".lrc",
       translyricname: songname + " - " + singer + ".trans.lrc",
     };
+    if (createMpdPlayList) {
+      let playListPath = MpdPlayListsPath + listname + ".m3u";
+      if (!fs.existsSync(MpdPlayListsPath)) fs.mkdirSync(MpdPlayListsPath);
+      if (!fs.existsSync(playListPath))
+        fs.writeFileSync(playListPath, "", (err) =>
+          console.log("mpd playlist create failed:", err)
+        );
+      fs.appendFileSync(
+        playListPath,
+        listname + "/" + payload.filename + "\n",
+        (err) => console.log("mpd playlist append failed:", err)
+      );
+    }
     DownloadSong(payload);
     DownloadSongLyrics(payload);
   }
@@ -107,10 +125,7 @@ async function DownloadUserSongList(id) {
       .api("songlist", { id: list.tid })
       .catch((err) => console.log("获取歌单详情：", err));
 
-    let listpath = SongDir + res.dissname + "/";
-    if (!fs.existsSync(listpath)) fs.mkdirSync(listpath);
-
-    DownloadSongList(res.songlist, listpath);
+    DownloadSongList(res.dissname, res.songlist);
   }
 }
 
@@ -151,7 +166,7 @@ async function RecommendDaily() {
         fs.mkdirSync(listpath);
       }
     } else {
-      fs.rmSync(listpath, {recursive: true, force: true});
+      fs.rmSync(listpath, { recursive: true, force: true });
       fs.mkdirSync(listpath);
     }
   }
