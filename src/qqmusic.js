@@ -13,6 +13,7 @@ const RecommendDailyDir = "每日推荐";
 const createMpdPlayList = true;
 const overwritePlayList = false;
 const MpdPlayListsPath = "/home/walter/.mpd/playlists/";
+const MpdPlayListsBackupPath = "/home/walter/.mpd/playlists/.old/";
 
 qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
@@ -78,9 +79,11 @@ function DownloadSongList(listname, songlist) {
 
   // MPD Extension
   let playListPath = MpdPlayListsPath + listname + ".m3u";
-  let oldPlayListPath = MpdPlayListsPath + listname + "_old.m3u";
+  let oldPlayListPath = MpdPlayListsBackupPath + listname + "_old.m3u";
   if (createMpdPlayList) {
     if (!fs.existsSync(MpdPlayListsPath)) fs.mkdirSync(MpdPlayListsPath);
+    if (!fs.existsSync(MpdPlayListsBackupPath))
+      fs.mkdirSync(MpdPlayListsBackupPath);
     if (!overwritePlayList && fs.existsSync(playListPath)) {
       fs.rmSync(oldPlayListPath);
       fs.renameSync(playListPath, oldPlayListPath);
