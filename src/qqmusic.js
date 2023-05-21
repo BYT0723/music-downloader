@@ -2,14 +2,16 @@ const fs = require("fs");
 const download = require("download");
 const qqmusic = require("qq-music-api");
 
-const SongDir = "/home/walter/Music/";
-const RecommendDailyDir = "每日推荐";
-const SongLyricDir = "/home/walter/Music/.lyrics/";
 // const SongSize = ["flac", "320", "128", "ape", "m4a"];
 const SongSize = ["128", "320", "flac"];
 const sizeToSuffix = (size) =>
   ["320", "128"].indexOf(size) >= 0 ? "mp3" : size;
+
+const SongDir = "/home/walter/Music/";
+const SongLyricDir = "/home/walter/Music/.lyrics/";
+const RecommendDailyDir = "每日推荐";
 const createMpdPlayList = true;
+const overwritePlayList = false;
 const MpdPlayListsPath = "/home/walter/.mpd/playlists/";
 
 qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
@@ -74,6 +76,20 @@ function DownloadSongList(listname, songlist) {
   let listpath = SongDir + listname + "/";
   if (!fs.existsSync(listpath)) fs.mkdirSync(listpath);
 
+  // MPD Extension
+  let playListPath = MpdPlayListsPath + listname + ".m3u";
+  let oldPlayListPath = MpdPlayListsPath + listname + "_old.m3u";
+  if (createMpdPlayList) {
+    if (!fs.existsSync(MpdPlayListsPath)) fs.mkdirSync(MpdPlayListsPath);
+    if (!overwritePlayList && fs.existsSync(playListPath)) {
+      fs.rmSync(oldPlayListPath);
+      fs.renameSync(playListPath, oldPlayListPath);
+    }
+    fs.writeFileSync(playListPath, "", (err) =>
+      console.log("mpd playlist create failed:", err)
+    );
+  }
+
   for (let song of songlist) {
     let singers = [];
     for (s of song.singer) singers.push(s.name);
@@ -92,13 +108,8 @@ function DownloadSongList(listname, songlist) {
       lyricname: songname + " - " + singer + ".lrc",
       translyricname: songname + " - " + singer + ".trans.lrc",
     };
+    // MPD Extension
     if (createMpdPlayList) {
-      let playListPath = MpdPlayListsPath + listname + ".m3u";
-      if (!fs.existsSync(MpdPlayListsPath)) fs.mkdirSync(MpdPlayListsPath);
-      if (!fs.existsSync(playListPath))
-        fs.writeFileSync(playListPath, "", (err) =>
-          console.log("mpd playlist create failed:", err)
-        );
       fs.appendFileSync(
         playListPath,
         listname + "/" + payload.filename + "\n",
