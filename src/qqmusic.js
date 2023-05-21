@@ -7,17 +7,24 @@ const SongSize = ["128", "320", "flac"];
 const sizeToSuffix = (size) =>
   ["320", "128"].indexOf(size) >= 0 ? "mp3" : size;
 
+// song storage path
 const SongDir = "/home/walter/Music/";
+// Lyric storage path
 const SongLyricDir = "/home/walter/Music/.lyrics/";
+// The name of the daily recommended playlist
 const RecommendDailyDir = "每日推荐";
-const createMpdPlayList = true;
-const overwritePlayList = false;
+// Whether to synchronize the playlist of mpd
+const syncMpdPlayList = true;
+// If the playlist with the same name exists, whether to overwrite it
+const overwritePlayList = true;
+// Path of mpd playlists
 const MpdPlayListsPath = "/home/walter/.mpd/playlists/";
+// When a playlist with the same name appears, the old file will be backed up to this path
 const MpdPlayListsBackupPath = "/home/walter/.mpd/playlists/.old/";
 
 qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
-// Download song
+// Download single song
 function DownloadSong(song) {
   qqmusic
     .api("/song/url", {
@@ -80,7 +87,7 @@ function DownloadSongList(listname, songlist) {
   // MPD Extension
   let playListPath = MpdPlayListsPath + listname + ".m3u";
   let oldPlayListPath = MpdPlayListsBackupPath + listname + "_old.m3u";
-  if (createMpdPlayList) {
+  if (syncMpdPlayList) {
     if (!fs.existsSync(MpdPlayListsPath)) fs.mkdirSync(MpdPlayListsPath);
     if (!fs.existsSync(MpdPlayListsBackupPath))
       fs.mkdirSync(MpdPlayListsBackupPath);
@@ -112,7 +119,7 @@ function DownloadSongList(listname, songlist) {
       translyricname: songname + " - " + singer + ".trans.lrc",
     };
     // MPD Extension
-    if (createMpdPlayList) {
+    if (syncMpdPlayList) {
       fs.appendFileSync(
         playListPath,
         listname + "/" + payload.filename + "\n",
@@ -124,12 +131,13 @@ function DownloadSongList(listname, songlist) {
   }
 }
 
-async function DownloadUserSongList(id) {
+// Download the user's playlist
+async function DownloadUserSongList(uid) {
   if (!fs.existsSync(SongDir)) fs.mkdirSync(SongDir);
   if (!fs.existsSync(SongLyricDir)) fs.mkdirSync(SongLyricDir);
 
   let res = await qqmusic
-    .api("user/songlist", { id: id })
+    .api("user/songlist", { id: uid })
     .catch((err) => console.log("获取歌单：", err));
 
   for (list of res.list) {
@@ -161,6 +169,7 @@ async function Search(key) {
   }
 }
 
+// daily recommendations
 async function RecommendDaily() {
   let res = await qqmusic.api("recommend/daily");
 
