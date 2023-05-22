@@ -1,7 +1,7 @@
 {
   "scripts": {
     "sync": "all_proxy='' http_proxy='' https_proxy='' ALL_PROXY='' HTTP_PROXY='' HTTPS_RPOXY='' node src/qqmusic.js download",
-    "daliy": "all_proxy='' http_proxy='' https_proxy='' ALL_PROXY='' HTTP_PROXY='' HTTPS_RPOXY='' node src/qqmusic.js recommend-daily"
+    "daily": "all_proxy='' http_proxy='' https_proxy='' ALL_PROXY='' HTTP_PROXY='' HTTPS_RPOXY='' node src/qqmusic.js recommend-daily"
   },
   "dependencies": {
     "download": "^8.0.0",
