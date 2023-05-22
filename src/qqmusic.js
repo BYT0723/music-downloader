@@ -1,6 +1,9 @@
 const fs = require("fs");
+const path = require("path");
 const download = require("download");
 const qqmusic = require("qq-music-api");
+
+const HOME = process.env.HOME || process.env.USERPROFILE;
 
 // const SongSize = ["flac", "320", "128", "ape", "m4a"];
 const SongSize = ["128", "320", "flac"];
@@ -8,9 +11,9 @@ const sizeToSuffix = (size) =>
   ["320", "128"].indexOf(size) >= 0 ? "mp3" : size;
 
 // song storage path
-const SongDir = "/home/walter/Music/";
+const SongDir = path.join(HOME, "Music");
 // Lyric storage path
-const SongLyricDir = "/home/walter/Music/.lyrics/";
+const SongLyricDir = path.join(SongDir, ".lyrics");
 // The name of the daily recommended playlist
 const RecommendDailyDir = "每日推荐";
 // Whether to synchronize the playlist of mpd
@@ -18,9 +21,9 @@ const syncMpdPlayList = true;
 // If the playlist with the same name exists, whether to overwrite it
 const overwritePlayList = true;
 // Path of mpd playlists
-const MpdPlayListsPath = "/home/walter/.mpd/playlists/";
+const MpdPlayListsPath = path.join(HOME, ".mpd", "playlists");
 // When a playlist with the same name appears, the old file will be backed up to this path
-const MpdPlayListsBackupPath = "/home/walter/.mpd/playlists/.old/";
+const MpdPlayListsBackupPath = path.join(MpdPlayListsPath, ".old");
 
 qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
@@ -33,7 +36,8 @@ function DownloadSong(song) {
       mediaId: song.strMediaMid,
     })
     .then((res) => {
-      if (fs.existsSync(song.listpath + song.filename)) return;
+      let songfile = path.join(song.listpath, song.filename);
+      if (fs.existsSync(songfile)) return;
       download(res, song.listpath, { filename: song.filename })
         .then(() => console.log(song.filename, "Download Completed !"))
         // .catch((err) => TryDownloadNextSizeSong(song, err));
@@ -65,15 +69,17 @@ function DownloadSongLyrics(song) {
         if (err != null) console.log(song.lyricname, ":", err);
       };
       // download lyrics
-      if (!fs.existsSync(SongLyricDir + song.lyricname)) {
+      let lyricfile = path.join(SongLyricDir, song.lyricname);
+      if (!fs.existsSync(lyricfile)) {
         res.lyric = res.lyric.replace("&apos;", "'");
-        fs.writeFile(SongLyricDir + song.lyricname, res.lyric, callback);
+        fs.writeFile(lyricfile, res.lyric, callback);
       }
       // download lyrics translation
-      if (!fs.existsSync(SongLyricDir + song.translyricname)) {
+      let lyrictrans = path.join(SongLyricDir, song.translyricname);
+      if (!fs.existsSync(lyrictrans)) {
         if (res.trans != "") {
           res.trans = res.trans.replace("&apos;", "'");
-          fs.writeFile(SongLyricDir + song.translyricname, res.trans, callback);
+          fs.writeFile(lyrictrans, res.trans, callback);
         }
       }
     })
@@ -81,18 +87,21 @@ function DownloadSongLyrics(song) {
 }
 
 function DownloadSongList(listname, songlist) {
-  let listpath = SongDir + listname + "/";
+  let listpath = path.join(SongDir, listname);
   if (!fs.existsSync(listpath)) fs.mkdirSync(listpath);
 
   // MPD Extension
-  let playListPath = MpdPlayListsPath + listname + ".m3u";
-  let oldPlayListPath = MpdPlayListsBackupPath + listname + "_old.m3u";
+  let playListPath = path.join(MpdPlayListsPath, listname + ".m3u");
+  let oldPlayListPath = path.join(
+    MpdPlayListsBackupPath,
+    listname + "_old.m3u"
+  );
   if (syncMpdPlayList) {
     if (!fs.existsSync(MpdPlayListsPath)) fs.mkdirSync(MpdPlayListsPath);
-    if (!fs.existsSync(MpdPlayListsBackupPath))
-      fs.mkdirSync(MpdPlayListsBackupPath);
     if (!overwritePlayList && fs.existsSync(playListPath)) {
-      fs.rmSync(oldPlayListPath);
+      if (!fs.existsSync(MpdPlayListsBackupPath))
+        fs.mkdirSync(MpdPlayListsBackupPath);
+      else fs.rmSync(oldPlayListPath);
       fs.renameSync(playListPath, oldPlayListPath);
     }
     fs.writeFileSync(playListPath, "", (err) =>
@@ -173,7 +182,7 @@ async function Search(key) {
 async function RecommendDaily() {
   let res = await qqmusic.api("recommend/daily");
 
-  let listpath = SongDir + RecommendDailyDir + "/";
+  let listpath = path.join(SongDir, RecommendDailyDir);
   if (!fs.existsSync(listpath)) {
     fs.mkdirSync(listpath);
   } else {
