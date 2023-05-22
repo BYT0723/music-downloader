@@ -28,15 +28,12 @@ const MpdPlayListsBackupPath = "<paht>/<playlists>/.old";
 ```shell
 npm i
 
-# add your qqmusic cookie to root/qqmusic-cookie.txt
+# add your qqmusic cookie to root/qqmusic-cookie.txt or copy cookie to qqmusic-cookie.txt from browser
 echo "key=value;..." > qqmusic-cookie.txt
 
-# download myself playlists
-node src/main.js download
-
-# if your want to download other user's list can add target uid
-node src/main.js download <qq_uid>
+# sync myself playlists
+npm run sync
 
 # Download the daily recommended playlist
-node src/main.js recommend-daily
+npm run daily
 ```
