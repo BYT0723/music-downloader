@@ -10,9 +10,9 @@ const SongSize = ["128", "320", "flac"];
 const sizeToSuffix = (size) =>
   ["320", "128"].indexOf(size) >= 0 ? "mp3" : size;
 
-// song storage path
+// song storage path (default: ~/Music)
 const SongDir = path.join(HOME, "Music");
-// Lyric storage path
+// Lyric storage path (default: ~/Music/.lyrics)
 const SongLyricDir = path.join(SongDir, ".lyrics");
 // The name of the daily recommended playlist
 const RecommendDailyDir = "每日推荐";
@@ -20,15 +20,16 @@ const RecommendDailyDir = "每日推荐";
 const syncMpdPlayList = true;
 // If the playlist with the same name exists, whether to overwrite it
 const overwritePlayList = true;
-// Path of mpd playlists
+// Path of mpd playlists (default: ~/.mpd/playlists)
 const MpdPlayListsPath = path.join(HOME, ".mpd", "playlists");
-// When a playlist with the same name appears, the old file will be backed up to this path
+// When a playlist with the same name appears, the old file will be backed up to this path (default: ~/.mpd/playlists/.old)
 const MpdPlayListsBackupPath = path.join(MpdPlayListsPath, ".old");
 
 qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
 // Download single song
 async function DownloadSong(song) {
+  console.log(song.mid, song.name);
   let songfile = path.join(song.listpath, song.filename);
   if (fs.existsSync(songfile)) return;
   try {

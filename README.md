@@ -20,7 +20,7 @@ const overwritePlayList = true;
 // Path of mpd playlists
 const MpdPlayListsPath = "<path>/<playlists>";
 // When a playlist with the same name appears, the old file will be backed up to this path
-const MpdPlayListsBackupPath = "<paht>/<playlists>/.old";
+const MpdPlayListsBackupPath = "<path>/<playlists>/.old";
 ```
 
 ### Start
