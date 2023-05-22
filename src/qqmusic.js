@@ -28,22 +28,22 @@ const MpdPlayListsBackupPath = path.join(MpdPlayListsPath, ".old");
 qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
 // Download single song
-function DownloadSong(song) {
-  qqmusic
-    .api("/song/url", {
+async function DownloadSong(song) {
+  let songfile = path.join(song.listpath, song.filename);
+  if (fs.existsSync(songfile)) return;
+  try {
+    let res = await qqmusic.api("/song/url", {
       id: song.mid,
       type: song.size,
       mediaId: song.strMediaMid,
-    })
-    .then((res) => {
-      let songfile = path.join(song.listpath, song.filename);
-      if (fs.existsSync(songfile)) return;
-      download(res, song.listpath, { filename: song.filename })
-        .then(() => console.log(song.filename, "Download Completed !"))
-        // .catch((err) => TryDownloadNextSizeSong(song, err));
-        .catch((err) => console.log(song.filename, err));
-    })
-    .catch((err) => TryDownloadNextSizeSong(song, err));
+    });
+    download(res, song.listpath, { filename: song.filename }).then(() =>
+      console.log(song.filename, "Download Completed !")
+    );
+  } catch (err) {
+    console.log(song.filename, err);
+    // TryDownloadNextSizeSong(song, err)
+  }
 }
 
 function TryDownloadNextSizeSong(song, err) {
@@ -58,32 +58,32 @@ function TryDownloadNextSizeSong(song, err) {
   }
 }
 
-// Download lyrics and translation of lyrics
-function DownloadSongLyrics(song) {
-  qqmusic
-    .api("lyric", {
-      songmid: song.mid,
-    })
-    .then((res) => {
-      let callback = (err) => {
-        if (err != null) console.log(song.lyricname, ":", err);
-      };
-      // download lyrics
-      let lyricfile = path.join(SongLyricDir, song.lyricname);
-      if (!fs.existsSync(lyricfile)) {
-        res.lyric = res.lyric.replace("&apos;", "'");
-        fs.writeFile(lyricfile, res.lyric, callback);
-      }
-      // download lyrics translation
-      let lyrictrans = path.join(SongLyricDir, song.translyricname);
-      if (!fs.existsSync(lyrictrans)) {
-        if (res.trans != "") {
-          res.trans = res.trans.replace("&apos;", "'");
-          fs.writeFile(lyrictrans, res.trans, callback);
-        }
-      }
-    })
-    .catch((err) => console.log(err));
+// Download lyric and translation of lyric
+async function DownloadSongLyric(song) {
+  let lyricfile = path.join(SongLyricDir, song.lyricname);
+  let lyrictrans = path.join(SongLyricDir, song.translyricname);
+  if (fs.existsSync(lyricfile)) return;
+  if (fs.existsSync(lyrictrans)) return;
+  try {
+    const res = await qqmusic.api("lyric", { songmid: song.mid });
+
+    // download lyric
+    res.lyric = res.lyric.replace("&apos;", "'");
+    fs.writeFile(lyricfile, res.lyric, (err) => {
+      if (err != null) console.log(song.lyricname, err);
+      else console.log(song.lyricname, "Download Completed !");
+    });
+    // download lyrics translation
+    if (res.trans != "") {
+      res.trans = res.trans.replace("&apos;", "'");
+      fs.writeFile(lyrictrans, res.trans, (err) => {
+        if (err != null) console.log(song.translyricname, err);
+        else console.log(song.translyricname, "Download Completed !");
+      });
+    }
+  } catch (err) {
+    console.log(song.lyricname, err);
+  }
 }
 
 function DownloadSongList(listname, songlist) {
@@ -136,7 +136,7 @@ function DownloadSongList(listname, songlist) {
       );
     }
     DownloadSong(payload);
-    DownloadSongLyrics(payload);
+    DownloadSongLyric(payload);
   }
 }
 
@@ -145,18 +145,17 @@ async function DownloadUserSongList(uid) {
   if (!fs.existsSync(SongDir)) fs.mkdirSync(SongDir);
   if (!fs.existsSync(SongLyricDir)) fs.mkdirSync(SongLyricDir);
 
-  let res = await qqmusic
-    .api("user/songlist", { id: uid })
-    .catch((err) => console.log("获取歌单：", err));
+  try {
+    let res = await qqmusic.api("user/songlist", { id: uid });
+    for (list of res.list) {
+      if (list.tid == 0) continue;
 
-  for (list of res.list) {
-    if (list.tid == 0) continue;
+      let result = await qqmusic.api("songlist", { id: list.tid });
 
-    res = await qqmusic
-      .api("songlist", { id: list.tid })
-      .catch((err) => console.log("获取歌单详情：", err));
-
-    DownloadSongList(res.dissname, res.songlist);
+      DownloadSongList(result.dissname, result.songlist);
+    }
+  } catch (err) {
+    console.log("获取歌单", err);
   }
 }
 
@@ -180,33 +179,33 @@ async function Search(key) {
 
 // daily recommendations
 async function RecommendDaily() {
-  let res = await qqmusic.api("recommend/daily");
+  let res = await qqmusic
+    .api("recommend/daily")
+    .catch((err) => console.log(RecommendDailyDir, err));
 
   let listpath = path.join(SongDir, RecommendDailyDir);
+  let datefile = path.join(listpath, ".date");
   if (!fs.existsSync(listpath)) {
     fs.mkdirSync(listpath);
   } else {
-    if (fs.existsSync(listpath + ".date")) {
-      let date = new Date(fs.readFileSync(listpath + ".date").toString());
+    if (fs.existsSync(datefile)) {
+      let date = new Date(fs.readFileSync(datefile).toString());
       let now = new Date();
 
       // 时间相同表示当日已经更新
       if (date.getDay() != now.getDay()) {
-        fs.rmSync(listpath, { force: true, recursive: true }, (err) =>
-          console.log(err)
-        );
+        fs.rmSync(listpath, { force: true, recursive: true });
         fs.mkdirSync(listpath);
       }
     } else {
-      fs.rmSync(listpath, { recursive: true, force: true });
       fs.mkdirSync(listpath);
     }
   }
 
-  DownloadSongList(res.songlist, listpath);
+  DownloadSongList(RecommendDailyDir, res.songlist);
 
   let now = new Date();
-  fs.writeFile(listpath + ".date", now.toString(), (err) => console.log(err));
+  fs.writeFile(datefile, now.toString(), (err) => console.log(err));
 }
 
 let opt = process.argv.slice(2)[0]; //获取控制台参数
@@ -221,8 +220,5 @@ switch (opt) {
     break;
   case "recommend-daily":
     RecommendDaily();
-    break;
-  default:
-    Recommend();
     break;
 }
