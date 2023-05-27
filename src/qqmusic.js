@@ -68,14 +68,20 @@ async function DownloadSongLyric(song) {
     const res = await qqmusic.api("lyric", { songmid: song.mid });
 
     // download lyric
-    res.lyric = res.lyric.replace("&apos;", "'");
+    res.lyric = res.lyric
+      .replace(/&apos;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&nbsp;/g, " ");
     fs.writeFile(lyricfile, res.lyric, (err) => {
       if (err != null) console.log(song.lyricname, err);
       else console.log(song.lyricname, "Download Completed !");
     });
     // download lyrics translation
     if (res.trans != "") {
-      res.trans = res.trans.replace("&apos;", "'");
+      res.lyric = res.lyric
+        .replace(/&apos;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&nbsp;/g, " ");
       fs.writeFile(lyrictrans, res.trans, (err) => {
         if (err != null) console.log(song.translyricname, err);
         else console.log(song.translyricname, "Download Completed !");
