@@ -29,7 +29,6 @@ qqmusic.setCookie(fs.readFileSync("qqmusic-cookie.txt").toString().trim());
 
 // Download single song
 async function DownloadSong(song) {
-  console.log(song.mid, song.name);
   let songfile = path.join(song.listpath, song.filename);
   if (fs.existsSync(songfile)) return;
   try {
