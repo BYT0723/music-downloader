@@ -12,17 +12,16 @@ const download = require("download");
 const qrcode = require("qrcode-terminal");
 const path = require("path");
 
+const cookiePath = "netease-cloud-music-cookie.txt";
+
 const HOME = process.env.HOME || process.env.USERPROFILE;
 
 async function main() {
   try {
-    if (!fs.existsSync("netease-cloud-music-cookie.txt")) {
-      fs.writeFileSync("netease-cloud-music-cookie.txt", "");
+    if (!fs.existsSync(cookiePath)) {
+      fs.writeFileSync(cookiePath, "");
     }
-    let cookie = fs
-      .readFileSync("netease-cloud-music-cookie.txt")
-      .toString()
-      .trim();
+    let cookie = fs.readFileSync(cookiePath).toString().trim();
     if (cookie.length == 0) {
       let res = await login_qr_key();
       const qr_key = res.body.data.unikey;
@@ -42,7 +41,7 @@ async function main() {
       }
       cookie = res.body.cookie;
       // 写入cookie
-      fs.writeFile("netease-cloud-music-cookie.txt", res.body.cookie);
+      fs.writeFile(cookiePath, res.body.cookie);
     }
 
     // load user_id
@@ -57,15 +56,19 @@ async function main() {
       cookie: cookie,
     });
 
+    // traverse playlist
     for (let list of res.body.playlist) {
+      // Filter out playlists created by self
       if (list.creator.userId != user_id) {
         continue;
       }
+      // Get all the songs in the playlist
       res = await playlist_track_all({
         id: list.id,
         cookie: cookie,
       });
 
+      // traverse songs in playlist
       for (let song of res.body.songs) {
         let singers = [];
         for (s of song.ar) singers.push(s.name);
@@ -73,23 +76,25 @@ async function main() {
         let songname = song.name + " - " + singers.join(",") + ".mp3";
         songname = songname.replace("/", " ").replace("\\", " ");
 
+        // Get the download link of the song
         res = await song_download_url({
           id: song.id,
           br: 128000,
           cookie: cookie,
         });
         if (!res.body.data.url) {
-          console.log(songname, "无法获取下载链接");
+          console.log(songname, "{ 无法获取下载链接 }");
           continue;
         }
 
+        // download songs
         download(
           res.body.data.url,
           path.join(HOME, "Music", "NeteaseCloudMusic"),
           {
             filename: songname,
           }
-        ).then(() => console.log(songname, " -------- Download Completed !"));
+        ).then(() => console.log(songname, " - Download Completed !"));
       }
     }
   } catch (error) {
