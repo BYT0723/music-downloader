@@ -61,7 +61,6 @@ class PlayList {
       this.listInfo.id[item.filename] = item.id;
       this.listInfo.mid[item.filename] = item.mid;
     });
-    fs.writeFileSync(this.listInfoPath, JSON.stringify(this.listInfo, null, 2));
   }
 
   // 同步歌单
@@ -74,15 +73,64 @@ class PlayList {
       // 下载歌曲
       await item.download(this.listpath);
     }
+    // 同步listInfo
+    fs.writeFileSync(this.listInfoPath, JSON.stringify(this.listInfo, null, 2));
+  }
+
+  syncByListInfo() {
+    //如果为每日推荐则不同步
+    if (info.dirid == 202) {
+      console.log("每日推荐歌单不能增删同步");
+      return;
+    }
+
+    let info = JSON.parse(fs.readFileSync(this.listInfoPath).toString());
+
+    let addList = Object.entries(info.mid)
+      .filter((value) => info.id[value[0]] == null)
+      .map((value) => value[1]);
+    let rmList = Object.entries(info.id)
+      .filter((value) => info.mid[value[0]] == null)
+      .map((value) => value[1]);
+
+    if (addList.length > 0) this.addSong(addList.join(","));
+    else if (rmList.length > 0) this.rmSong(rmList.join(","));
+    else return;
+
+    this.sync();
+  }
+
+  // 检查mpd歌单中是否有其他歌单中的歌
+  checkMpdPlayList() {}
+
+  // 向歌单中添加歌曲
+  addSong(mid) {
+    qqmusic
+      .api("/songlist/add", { dirid: this.dirid, mid: mid })
+      .catch((err) =>
+        console.log("failed to add song(" + mid + ") to", this.dissname, err)
+      );
+  }
+
+  // 从歌单中移除歌曲
+  rmSong(id) {
+    qqmusic
+      .api("/songlist/remove", { dirid: this.dirid, id: id })
+      .catch((err) =>
+        console.log(
+          "failed to remove song(" + id + ") from",
+          this.dissname,
+          err
+        )
+      );
   }
 
   // 同步mpd歌单
   syncMpdPlayList() {
     // 不覆盖并且mpd歌单存在时
-    if (!OverwritePlayList && fs.existsSync(this.mpdPlayListPath)) {
-      // 备份文件
-      fs.renameSync(this.mpdPlayListPath, this.oldMpdPlayListPath);
-      fs.writeFileSync(this.mpdPlayListPath, "");
+    if (fs.existsSync(this.mpdPlayListPath)) {
+      if (OverwritePlayList) fs.writeFileSync(this.mpdPlayListPath, "");
+      else fs.renameSync(this.mpdPlayListPath, this.oldMpdPlayListPath);
     }
 
     // 遍历songs,并生成mpd歌单
@@ -108,9 +156,7 @@ async function getPlayList(tid) {
 }
 
 // 使用uid获取playlist
-async function getUserPlayList(uid = null) {
-  if (!uid) uid = qqmusic.uin;
-
+async function getUserPlayList(uid) {
   let lists = new Array();
   try {
     let res = await qqmusic.api("user/songlist", { id: uid });

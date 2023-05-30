@@ -1,10 +1,13 @@
 {
   "scripts": {
-    "sync": "all_proxy='' http_proxy='' https_proxy='' ALL_PROXY='' HTTP_PROXY='' HTTPS_RPOXY='' node src/qqmusic.js download",
-    "daily": "all_proxy='' http_proxy='' https_proxy='' ALL_PROXY='' HTTP_PROXY='' HTTPS_RPOXY='' node src/qqmusic.js recommend-daily"
+    "sync": "all_proxy='' http_proxy='' https_proxy='' ALL_PROXY='' HTTP_PROXY='' HTTPS_RPOXY='' node src/qqmusic.js sync-self",
+    "daily": "all_proxy='' http_proxy='' https_proxy='' ALL_PROXY='' HTTP_PROXY='' HTTPS_RPOXY='' node src/qqmusic.js daily-recommend"
   },
   "dependencies": {
     "download": "^8.0.0",
-    "qq-music-api": "^1.1.2"
+    "glob": "^10.2.6",
+    "NeteaseCloudMusicApi": "^4.8.10",
+    "qq-music-api": "^1.1.2",
+    "qrcode-terminal": "^0.12.0"
   }
 }
