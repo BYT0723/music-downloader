@@ -33,6 +33,8 @@ class PlayList {
     // 歌单歌词路径
     this.lyricpath = SongLyricDir;
 
+    if (!fs.existsSync(this.listpath)) fs.mkdirSync(this.listpath);
+
     // 同步的mpd歌单路径
     if (!fs.existsSync(MpdPlayListsPath)) fs.mkdirSync(MpdPlayListsPath);
     this.mpdPlayListPath = path.join(MpdPlayListsPath, this.dissname + ".m3u");
