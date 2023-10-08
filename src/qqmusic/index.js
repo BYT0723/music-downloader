@@ -35,5 +35,5 @@ class QQMusic {
 
 // 实例化并导出
 module.exports = new QQMusic(
-  fs.readFileSync("qqmusic-cookie.txt").toString().trim()
+  fs.readFileSync("qqmusic-cookie.txt").toString().trim(),
 );

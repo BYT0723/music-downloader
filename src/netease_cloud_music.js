@@ -6,11 +6,13 @@ const {
   user_playlist,
   playlist_track_all,
   song_download_url,
+  lyric_new,
 } = require("NeteaseCloudMusicApi");
 const fs = require("fs");
 const download = require("download");
 const qrcode = require("qrcode-terminal");
 const path = require("path");
+const { _cookie } = require("qq-music-api");
 
 const cookiePath = "netease-cloud-music-cookie.txt";
 
@@ -73,28 +75,43 @@ async function main() {
         let singers = [];
         for (s of song.ar) singers.push(s.name);
 
-        let songname = song.name + " - " + singers.join(",") + ".mp3";
+        let songname = song.name + " - " + singers.join(",");
         songname = songname.replace("/", " ").replace("\\", " ");
 
         // Get the download link of the song
         res = await song_download_url({
           id: song.id,
-          br: 128000,
+          br: 320000,
           cookie: cookie,
         });
+
         if (!res.body.data.url) {
           console.log(songname, "{ 无法获取下载链接 }");
           continue;
         }
+
+        let songFile = songname + ".mp3";
 
         // download songs
         download(
           res.body.data.url,
           path.join(HOME, "Music", "NeteaseCloudMusic"),
           {
-            filename: songname,
+            filename: songFile,
           }
         ).then(() => console.log(songname, " - Download Completed !"));
+
+        let lyricFile = path.join(HOME, "Music", ".lyrics", songname + ".lrc");
+        res = await lyric_new({
+          id: song.id,
+          cookie: cookie,
+        });
+        if (res.body.lrc.lyric != "") {
+          fs.writeFile(lyricFile, res.body.lrc.lyric, (err) => {
+            if (err != null) console.log(lyricFile, err);
+            else console.log(lyricFile, "Download Completed !");
+          });
+        }
       }
     }
   } catch (error) {
