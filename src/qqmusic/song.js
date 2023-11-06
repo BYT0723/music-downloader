@@ -21,7 +21,7 @@ class Song {
     size = null,
     filename = null,
     lyricname = null,
-    translyricname = null
+    translyricname = null,
   ) {
     this.id = id;
     this.mid = mid;
@@ -59,6 +59,11 @@ class Song {
     if (!fs.existsSync(lyricpath)) fs.mkdirSync(lyricpath);
     try {
       const res = await qqmusic.api("lyric", { songmid: this.mid });
+
+      if (!res.lyric) {
+        console.log(this.name, "Fetch Failed !");
+        return;
+      }
 
       let lyricfile = path.join(lyricpath, this.lyricname);
       if (!fs.existsSync(lyricfile)) {
@@ -113,7 +118,7 @@ function parse(song) {
     songsize,
     songname + " - " + singer + "." + sizeToSuffix(songsize),
     songname + " - " + singer + ".lrc",
-    songname + " - " + singer + ".trans.lrc"
+    songname + " - " + singer + ".trans.lrc",
   );
 }
 
@@ -139,7 +144,7 @@ async function getSong(mid) {
     songsize,
     songname + " - " + singer + "." + sizeToSuffix(songsize),
     songname + " - " + singer + ".lrc",
-    songname + " - " + singer + ".trans.lrc"
+    songname + " - " + singer + ".trans.lrc",
   );
 }
 
